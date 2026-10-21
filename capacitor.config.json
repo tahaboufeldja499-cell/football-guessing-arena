@@ -1,0 +1,8 @@
+{
+  "appId": "com.footballarena.app",
+  "appName": "ساحة تخمين النجوم",
+  "webDir": "out",
+  "backgroundColor": "#050908",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
