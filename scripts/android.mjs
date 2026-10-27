@@ -53,14 +53,46 @@ function findJava() {
   return ["C:\\Program Files\\Android\\Android Studio\\jbr", "/Applications/Android Studio.app/Contents/jbr/Contents/Home", "/opt/android-studio/jbr"].find((p) => fs.existsSync(p));
 }
 
-function checkEnv() {
-  if (!fs.existsSync(path.join(ROOT, ".env.local")) && !process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.warn("⚠ لا يوجد .env.local: سيظهر التطبيق رسالة «يحتاج إعداد Supabase» بدل الأونلاين (المعرض واللعب المحلي يعملان).");
+/** يقرأ قيمة من .env.local (بدون طباعة المفتاح) أو من المتغيرات البيئية. */
+export function envValue(name) {
+  if (process.env[name]) return process.env[name];
+  try {
+    const m = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(new RegExp(`^${name}=(.*)$`, "m"));
+    return m ? m[1].trim().replace(/^["']|["']$/g, "") : "";
+  } catch { return ""; }
+}
+const placeholder = (v) => !v || v.includes("YOUR-PROJECT-REF") || v.includes("your-");
+export function checkEnv() {
+  const url = envValue("NEXT_PUBLIC_SUPABASE_URL"), key = envValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const ok = !placeholder(url) && !placeholder(key);
+  console.log(`مفاتيح Supabase: URL ${placeholder(url) ? "✗ ناقص" : "✓"} • KEY ${placeholder(key) ? "✗ ناقص" : "✓"}`);
+  if (!ok && !process.env.ALLOW_NO_SUPABASE) die(
+    "مفاتيح Supabase غير موجودة وقت البناء، فسيُبنى التطبيق بدون أونلاين (والخطأ يُحفظ داخل ملف APK).\n" +
+    "  • محليًا: ضعها في .env.local\n" +
+    "  • على GitHub: Settings ← Secrets and variables ← Actions ← Secrets ← أضف NEXT_PUBLIC_SUPABASE_URL و NEXT_PUBLIC_SUPABASE_ANON_KEY\n" +
+    "  • لبناء نسخة محلية فقط (بدون أونلاين) عمدًا: ALLOW_NO_SUPABASE=1");
+  return ok ? url : "";
+}
+/** يتأكد أن عنوان Supabase موجود فعلًا داخل ملفات JavaScript المبنية في out/. */
+export function verifyEmbedded(url) {
+  if (!url || dry) return;
+  const host = new URL(url).host;
+  const stack = [path.join(ROOT, "out", "_next")];
+  while (stack.length) {
+    const d = stack.pop();
+    for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) stack.push(p);
+      else if (e.name.endsWith(".js") && fs.readFileSync(p, "utf8").includes(host)) { console.log("✓ مفاتيح Supabase مدمجة داخل التطبيق"); return; }
+    }
+  }
+  die("بُني التطبيق لكن عنوان Supabase غير موجود داخل ملفاته. تحقق من أسماء المتغيرات (NEXT_PUBLIC_...) وأعد البناء.");
 }
 function buildWeb() {
-  checkEnv();
+  const url = checkEnv();
   run("npx", ["next", "build"], { env: { BUILD_TARGET: "app" } });
   if (!dry && !fs.existsSync(path.join(ROOT, "out", "index.html"))) die("لم يُنتَج مجلد out. راجع أخطاء البناء أعلاه.");
+  verifyEmbedded(url);
 }
 function ensureSdk() {
   const lp = path.join(ANDROID, "local.properties");

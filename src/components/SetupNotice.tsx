@@ -10,6 +10,7 @@ export default function SetupNotice() {
         <p className="text-sm text-white/70">١) أنشئ مشروعًا في Supabase، وفعّل Anonymous sign-ins من Authentication ← Providers.</p>
         <p className="text-sm text-white/70">٢) شغّل الملفين supabase/schema.sql ثم supabase/seed.sql في SQL Editor.</p>
         <p className="text-sm text-white/70">٣) انسخ ‎.env.example‎ إلى ‎.env.local‎ وضع الرابط والمفتاح العام، ثم أعد تشغيل الخادم.</p>
+        <p className="text-sm text-white/70">٤) إن بنيت التطبيق عبر GitHub: أضف السرّين NEXT_PUBLIC_SUPABASE_URL وNEXT_PUBLIC_SUPABASE_ANON_KEY في Settings ← Secrets and variables ← Actions ← تبويب Secrets، ثم أعد تشغيل Build Android APK وثبّت الملف الجديد.</p>
         <p className="text-xs text-white/45">تفاصيل أكثر في ملف README.md.</p>
       </div>
     </main>

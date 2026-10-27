@@ -5,7 +5,6 @@ import Backdrop from "@/components/Backdrop";
 import Icon from "@/components/Icon";
 import Intro from "@/components/Intro";
 import SettingsModal from "@/components/SettingsModal";
-import SetupNotice from "@/components/SetupNotice";
 import { Logo } from "@/components/ui";
 import { ASSETS } from "@/lib/assets";
 import { arabicError } from "@/lib/errors";
@@ -16,7 +15,7 @@ import { ensureUser, isConfigured, supabase } from "@/lib/supabase";
 type View = "menu" | "mode" | "create" | "join";
 type IconName = Parameters<typeof Icon>[0]["name"];
 
-function Panel({ icon, title, sub, onClick, soon, hero }: { icon: IconName; title: string; sub: string; onClick?: () => void; soon?: boolean; hero?: boolean }) {
+function Panel({ icon, title, sub, onClick, soon, hero, badge = "قريبًا" }: { icon: IconName; title: string; sub: string; onClick?: () => void; soon?: boolean; hero?: boolean; badge?: string }) {
   return (
     <button type="button" className={`panel ${hero ? "panel-hero py-7" : ""}`} onClick={onClick} disabled={soon}>
       <span className="panel-icon" style={hero ? { width: 64, height: 64 } : undefined}><Icon name={icon} size={hero ? 34 : 24} /></span>
@@ -24,7 +23,7 @@ function Panel({ icon, title, sub, onClick, soon, hero }: { icon: IconName; titl
         <span className={`block font-black ${hero ? "text-3xl" : "text-lg"}`}>{title}</span>
         <span className="block text-sm text-white/60">{sub}</span>
       </span>
-      {soon && <span className="absolute left-3 top-3 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-bold text-gold">قريبًا</span>}
+      {soon && <span className="absolute left-3 top-3 rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-bold text-gold">{badge}</span>}
     </button>
   );
 }
@@ -50,7 +49,6 @@ export default function Home() {
 
   useEffect(() => { audio.setMood("menu"); }, []);
 
-  if (!isConfigured) return <SetupNotice />;
   const go = (v: View) => { setErr(""); setView(v); };
 
   function validNick() {
@@ -100,10 +98,15 @@ export default function Home() {
             <h1 className="text-3xl font-black leading-tight [text-shadow:0_2px_14px_rgba(0,0,0,.85)] sm:text-4xl">هل تستطيع كشف هوية <span className="text-gold">النجم</span>؟</h1>
             <p className="mt-2 text-white/80 [text-shadow:0_1px_8px_rgba(0,0,0,.9)]">كلٌّ منكما يخفي لاعبًا، ومن يكشف لاعب الآخر أولًا يفوز.</p>
           </div>
+          {!isConfigured && (
+            <div role="alert" className="rounded-xl border border-gold/40 bg-gold/10 p-3 text-sm text-gold">
+              الأونلاين غير مفعّل في هذه النسخة: لم تُضبط مفاتيح Supabase وقت البناء. اللعب المحلي والمعرض يعملان بشكل كامل.
+            </div>
+          )}
           <Panel hero icon="play" title="العب الآن" sub="اختر نمط المباراة وابدأ التحدي" onClick={() => go("mode")} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Panel icon="users" title="إنشاء غرفة أونلاين" sub="غرفة خاصة تدعو إليها صديقك" onClick={() => go("create")} />
-            <Panel icon="key" title="الانضمام برمز" sub="ادخل غرفة صديقك بالرمز" onClick={() => go("join")} />
+            <Panel icon="users" title="إنشاء غرفة أونلاين" sub="غرفة خاصة تدعو إليها صديقك" onClick={() => go("create")} soon={!isConfigured} badge="غير مفعّل" />
+            <Panel icon="key" title="الانضمام برمز" sub="ادخل غرفة صديقك بالرمز" onClick={() => go("join")} soon={!isConfigured} badge="غير مفعّل" />
             <Panel icon="phone" title="اللعب المحلي" sub="جهاز واحد تمرّرانه بينكما" onClick={() => router.push("/local")} />
             <Panel icon="layers" title="معرض اللاعبين" sub="تصفّح كل البطاقات والحزم" onClick={() => router.push("/gallery")} />
           </div>
@@ -118,8 +121,8 @@ export default function Home() {
             <div className="flex items-center gap-3"><span className="panel-icon"><Icon name="users" /></span>
               <div><div className="text-xl font-black">أونلاين</div><div className="text-sm text-white/65">كلٌّ على جهازه، مزامنة لحظية</div></div></div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <button className="btn-primary" onClick={() => go("create")}>إنشاء غرفة</button>
-              <button className="btn-ghost" onClick={() => go("join")}>انضمام برمز</button>
+              <button className="btn-primary" disabled={!isConfigured} onClick={() => go("create")}>إنشاء غرفة</button>
+              <button className="btn-ghost" disabled={!isConfigured} onClick={() => go("join")}>انضمام برمز</button>
             </div>
           </div>
           <button type="button" className="panel w-full" onClick={() => router.push("/local")}>

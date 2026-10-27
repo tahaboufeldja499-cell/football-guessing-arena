@@ -2,7 +2,7 @@ export type Status = "lobby" | "picking" | "playing" | "round_end" | "finished";
 
 export interface Footballer {
   id: number; name_ar: string; name_en: string; nationality: string;
-  club: string | null; league: string | null; position: "GK" | "DF" | "MF" | "FW"; is_legend?: boolean; position_detail?: string;
+  club: string | null; league: string | null; position: "GK" | "DF" | "MF" | "FW";
   photo_url: string | null;
 }
 export interface Room {

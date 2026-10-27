@@ -1,74 +1,45 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ASSETS } from "@/lib/assets";
-import { countryCode, flagCode } from "@/lib/countries";
 import type { Footballer } from "@/lib/types";
-import { cx } from "@/lib/utils";
+import { cx, hue, initials } from "@/lib/utils";
 
 export const POS_AR: Record<Footballer["position"], string> = { GK: "حارس", DF: "مدافع", MF: "وسط", FW: "مهاجم" };
-/** المراكز التفصيلية (أسلوب eFootball). */
-export const POS_DETAIL_AR: Record<string, string> = {
-  GK: "حارس مرمى", CB: "قلب دفاع", LB: "ظهير أيسر", RB: "ظهير أيمن", DMF: "وسط مدافع", CMF: "وسط ملعب",
-  LMF: "وسط أيسر", RMF: "وسط أيمن", AMF: "وسط مهاجم", LWF: "جناح أيسر", RWF: "جناح أيمن", SS: "مهاجم ثانٍ", CF: "رأس حربة",
-};
-/** الكود الظاهر على البطاقة: التفصيلي إن وُجد وإلا العام. */
-export const posCode = (f: Footballer) => f.position_detail ?? f.position;
 
-/** يصغّر الاسم الطويل ليبقى داخل لوحة الاسم دون قص. */
-const nameSize = (n: string) => (n.length <= 12 ? 6.3 : n.length <= 16 ? 5.2 : 4.4);
+export function Avatar({ f, size = 64 }: { f: Footballer; size?: number }) {
+  const [bad, setBad] = useState(false);
+  const h = hue(f.name_en);
+  if (f.photo_url && !bad) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={f.photo_url} alt={f.name_ar} width={size} height={size} loading="lazy" onError={() => setBad(true)}
+      className="rounded-full object-cover ring-2 ring-white/20" style={{ width: size, height: size }} />;
+  }
+  return (
+    <div aria-hidden className="grid place-items-center rounded-full font-black text-white ring-2 ring-white/20"
+      style={{ width: size, height: size, fontSize: size * 0.36, background: `linear-gradient(135deg, hsl(${h} 70% 38%), hsl(${(h + 50) % 360} 70% 22%))` }}>
+      {initials(f.name_en)}
+    </div>
+  );
+}
 
 interface CardProps {
   f: Footballer; selected?: boolean; excluded?: boolean; disabled?: boolean; mark?: string;
-  onClick?: () => void; big?: boolean; reveal?: boolean;
+  onClick?: () => void; big?: boolean;
 }
-
-/** البطاقة: big = كاملة بنصوص على اللوحات، وإلا «بلاطة» للشبكات (الاسم تحتها كنص واضح). */
-export function FootballerCard({ f, selected, excluded, disabled, mark, onClick, big, reveal }: CardProps) {
-  const [bad, setBad] = useState(false);
-  const legend = !!f.is_legend;
-  const hasPhoto = !!f.photo_url && !bad;
-
-  const card = (
-    <div className={cx("fcard-wrap", selected && "sel", excluded && "ex", reveal && "reveal")}>
-      {selected && /* eslint-disable-next-line @next/next/no-img-element */ <img className="fcard-halo" src={ASSETS.glow} alt="" aria-hidden />}
-      <div className={cx("fcard", legend && "legend", !big && "tile")}>
-        <div className="back" aria-hidden />
-        <div className="win">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={cx("photo", !hasPhoto && "fallback")} src={hasPhoto ? f.photo_url! : ASSETS.avatar} alt={hasPhoto ? f.name_ar : ""}
-            loading="lazy" decoding="async" onError={() => setBad(true)} />
-        </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="frame" src={legend ? ASSETS.legendFrame : ASSETS.frame} alt="" aria-hidden decoding="async" />
-        {legend && <span className="t b">أسطورة</span>}
-        <span className="t n" style={{ fontSize: `${nameSize(f.name_ar)}cqw` }}>{f.name_ar}</span>
-        <span className="t p">{posCode(f)}</span>
-        <span className="t f" dir="ltr" title={f.nationality}>
-          {flagCode(f.nationality) ? <span className={`fi fi-${flagCode(f.nationality)}`} role="img" aria-label={f.nationality} /> : countryCode(f.nationality)}
-        </span>
-      </div>
-      {(excluded || mark) && (
-        <svg className="xmark" viewBox="0 0 100 100" aria-hidden>
-          <path d="M16 20L84 80M84 20L16 80" stroke="#ef4444" strokeWidth="7" strokeLinecap="round" opacity=".92" />
-        </svg>
-      )}
-    </div>
-  );
-
-  if (big) return <div>{card}</div>;
-  const label = (
+export function FootballerCard({ f, selected, excluded, disabled, mark, onClick, big }: CardProps) {
+  const body = (
     <>
-      <div className="tile-name">{f.name_ar}</div>
-      <div className="tile-sub">{posCode(f)} • {f.club ?? f.nationality}</div>
+      <Avatar f={f} size={big ? 96 : 52} />
+      <div className={cx("w-full truncate font-bold leading-tight", big ? "text-xl" : "text-[13px]")}>{f.name_ar}</div>
+      <div className="w-full truncate text-[11px] text-white/55">{f.club ?? "—"}</div>
+      <span className="rounded-full bg-white/10 px-2 text-[10px] text-white/70">{POS_AR[f.position]}</span>
+      {mark && <span className="absolute left-1.5 top-1.5 rounded-full bg-red-500/90 px-1.5 text-[11px] font-black">{mark}</span>}
     </>
   );
-  if (!onClick) return <div>{card}{label}</div>;
-  return (
-    <button type="button" className="fcard-btn" onClick={onClick} disabled={disabled} aria-pressed={selected}
-      aria-label={`${f.name_ar}${excluded ? " (مستبعد)" : ""}`}>
-      {card}{label}
-    </button>
-  );
+  const cls = cx("relative flex flex-col items-center gap-1 rounded-2xl border p-2 text-center transition",
+    selected ? "border-neon bg-neon/15 shadow-[0_0_22px_rgba(45,255,122,.35)]" : "border-white/10 bg-white/[0.05]",
+    excluded && "opacity-25 grayscale", disabled && "opacity-30", onClick && !disabled && "hover:border-white/30 active:scale-95");
+  if (!onClick) return <div className={cls}>{body}</div>;
+  return <button type="button" className={cls} onClick={onClick} disabled={disabled} aria-pressed={selected}>{body}</button>;
 }
 
 interface GridProps {
@@ -88,10 +59,10 @@ export function PlayersGrid({ footballers, selectedId, excluded, disabledIds, on
       {list.length === 0 ? (
         <div className="glass p-8 text-center text-white/60">لا يوجد لاعب بهذا البحث.</div>
       ) : (
-        <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {list.map((f) => (
             <FootballerCard key={f.id} f={f} selected={selectedId === f.id} excluded={excluded?.has(f.id)}
-              disabled={disabledIds?.has(f.id)} mark={disabledIds?.has(f.id) ? "x" : undefined} onClick={() => onSelect(f.id)} />
+              disabled={disabledIds?.has(f.id)} mark={disabledIds?.has(f.id) ? "✕" : undefined} onClick={() => onSelect(f.id)} />
           ))}
         </div>
       )}

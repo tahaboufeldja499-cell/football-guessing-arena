@@ -1,15 +1,12 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RoomCtx } from "@/lib/ctx";
-import { ASSETS } from "@/lib/assets";
 import { QUICK_QUESTIONS } from "@/lib/quickQuestions";
-import { sfx } from "@/lib/sounds";
 import { isOnline } from "@/lib/useRoom";
 import { cx } from "@/lib/utils";
 import { FootballerCard, PlayersGrid } from "./FootballerCard";
 import GuessModal from "./GuessModal";
-import Icon from "./Icon";
-import { PlayerAvatar, StatusDot } from "./ui";
+import { StatusDot } from "./ui";
 
 export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
   const { room, me, opp, userId, questions, guesses, footballers, myPick, rpc, busy, roundNo, info, players } = ctx;
@@ -55,7 +52,7 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
     const b = body.trim();
     if (!b) return;
     const r = await rpc("ask_question", { p_room: room.id, p_body: b });
-    if (r.ok) { setText(""); sfx.ask(); }
+    if (r.ok) setText("");
   }
   async function answer() {
     if (choice === null || !pending) return;
@@ -72,7 +69,6 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
     <div className="space-y-3 pb-10">
       <header className="glass flex items-center justify-between gap-2 p-3">
         <div className="min-w-0 text-center">
-          <div className="mx-auto w-fit"><PlayerAvatar size={30} /></div>
           <div className="truncate text-sm font-bold">{me.nickname} <span className="text-neon">(أنت)</span></div>
           <div className="text-3xl font-black text-neon">{me.score}</div>
         </div>
@@ -81,7 +77,6 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
           <div>VS</div>
         </div>
         <div className="min-w-0 text-center">
-          <div className="mx-auto w-fit"><PlayerAvatar size={30} /></div>
           <div className="flex items-center justify-center gap-1.5 truncate text-sm font-bold"><StatusDot online={isOnline(opp)} />{oppName}</div>
           <div className="text-3xl font-black">{opp?.score ?? 0}</div>
         </div>
@@ -137,7 +132,7 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
                   ))}
                 </div>
               </div>
-              <button className="btn-ghost w-full border-gold/50 text-gold" onClick={() => setGuessOpen(true)}><Icon name="target" size={20} />خمّن اللاعب السرّي</button>
+              <button className="btn-ghost w-full border-gold/50 text-gold" onClick={() => setGuessOpen(true)}>🎯 خمّن اللاعب السرّي</button>
             </section>
           )}
 
@@ -157,12 +152,12 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
                   <div className="text-xs text-white/50">{it.q.asker === userId ? "أنت" : nameOf(it.q.asker)} سأل:</div>
                   <div className="font-bold">{it.q.body}</div>
                   <div className={cx("mt-1 text-xs font-black", it.q.answer === null ? "text-gold" : it.q.answer ? "text-neon" : "text-red-300")}>
-                    {it.q.answer === null ? "بانتظار الإجابة…" : it.q.answer ? "الإجابة: نعم ✓" : "الإجابة: لا ✕"}
+                    {it.q.answer === null ? "⏳ بانتظار الإجابة" : it.q.answer ? "الإجابة: نعم ✓" : "الإجابة: لا ✕"}
                   </div>
                 </div>
               ) : (
                 <div key={it.g.id} className="rounded-xl border border-gold/30 bg-gold/5 p-3 text-sm">
-                  <Icon name="target" size={15} className="ml-1 inline text-gold" />{it.g.guesser === userId ? "أنت" : nameOf(it.g.guesser)} خمّن <b>{footballers.find((f) => f.id === it.g.footballer_id)?.name_ar}</b> — <span className="text-red-300">خطأ ✕</span>
+                  🎯 {it.g.guesser === userId ? "أنت" : nameOf(it.g.guesser)} خمّن <b>{footballers.find((f) => f.id === it.g.footballer_id)?.name_ar}</b> — <span className="text-red-300">خطأ ✕</span>
                 </div>
               ))}
             </div>
@@ -175,13 +170,7 @@ export default function MatchScreen({ ctx }: { ctx: RoomCtx }) {
               <b>لاعبك السرّي</b>
               <button className="text-xs text-neon underline" onClick={() => setShowSecret((s) => !s)}>{showSecret ? "إخفاء" : "إظهار"}</button>
             </div>
-            {showSecret && mine ? <div className="mx-auto w-40"><FootballerCard f={mine} big /></div>
-              : /* eslint-disable-next-line @next/next/no-img-element */ <div className="mx-auto w-40"><img className="mystery-img" src={ASSETS.mystery} alt="بطاقتك مخفية" /></div>}
-          </section>
-          <section className="glass p-3 text-center">
-            <div className="mb-2 text-sm font-bold">لاعب {oppName} السرّي</div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <div className="mx-auto w-40"><img className="mystery-img" src={ASSETS.mystery} alt="بطاقة الخصم مخفية" /></div>
+            {showSecret && mine ? <div className="mx-auto w-40"><FootballerCard f={mine} /></div> : <div className="grid h-24 place-items-center text-4xl">🔒</div>}
           </section>
         </aside>
       </div>
