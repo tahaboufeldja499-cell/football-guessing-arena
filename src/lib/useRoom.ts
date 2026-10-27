@@ -55,7 +55,7 @@ export function useRoom(roomId: string, userId: string) {
         { event: "*", schema: "public", table, filter: table === "rooms" ? `id=eq.${roomId}` : `room_id=eq.${roomId}` },
         schedule);
     }
-    ch.subscribe((status) => {
+    ch.subscribe((status: string) => {
       if (status === "SUBSCRIBED") { setS((p) => ({ ...p, conn: "connected" })); refetch(); }
       else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED")
         setS((p) => ({ ...p, conn: "reconnecting" }));

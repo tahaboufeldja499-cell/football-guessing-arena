@@ -15,7 +15,7 @@ export default function GuessModal({ ctx, onClose }: { ctx: RoomCtx; onClose: ()
     if (!sel) return;
     const r = await rpc<boolean>("make_guess", { p_room: room.id, p_footballer: sel });
     if (!r.ok) { setConfirming(false); return; }
-    if (r.data === false) { sfx.lose(); info("تخمين خاطئ ✕ — انتقل الدور إلى خصمك", "err"); }
+    if (r.data === false) { sfx.wrong(); info("تخمين خاطئ ✕ — انتقل الدور إلى خصمك", "err"); }
     onClose();
   }
 

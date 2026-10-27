@@ -3,18 +3,18 @@ import { useRouter } from "next/navigation";
 import type { RoomCtx } from "@/lib/ctx";
 import { isOnline } from "@/lib/useRoom";
 import { roomLink } from "@/lib/utils";
-import { StatusDot } from "./ui";
+import { PlayerAvatar, StatusDot } from "./ui";
 
 function Slot({ nick, you, online, ready, empty }: { nick?: string; you?: boolean; online?: boolean; ready?: boolean; empty?: boolean }) {
   if (empty) return (
     <div className="glass grid min-h-[120px] place-items-center border-dashed p-4 text-center text-white/50">
-      <div><div className="mb-1 animate-pulse text-3xl">⏳</div>بانتظار اللاعب الثاني…</div>
+      <div><div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-white/15 border-t-neon" />بانتظار اللاعب الثاني…</div>
     </div>
   );
   const label = !online ? "انقطع اتصاله" : ready ? "جاهز ✓" : "يستعد";
   return (
     <div className="glass flex min-h-[120px] items-center gap-3 p-4 animate-pop">
-      <div className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-neon/60 to-navy text-2xl font-black text-ink">{Array.from(nick ?? "?")[0]}</div>
+      <PlayerAvatar size={64} />
       <div>
         <div className="text-lg font-black">{nick}{you && <span className="mr-2 text-xs text-neon">(أنت)</span>}</div>
         <div className="flex items-center gap-2 text-sm text-white/70"><StatusDot online={!!online} />{label}</div>

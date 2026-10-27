@@ -1,11 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ASSETS } from "@/lib/assets";
 import type { Rpc, RoomCtx } from "@/lib/ctx";
 import { arabicError } from "@/lib/errors";
-import { isMuted, setMuted, sfx } from "@/lib/sounds";
+import { audio, isMuted, setMuted, sfx } from "@/lib/sounds";
 import { supabase } from "@/lib/supabase";
 import { isOnline, useRoom } from "@/lib/useRoom";
+import Backdrop from "./Backdrop";
 import FinalScreen from "./FinalScreen";
 import Lobby from "./Lobby";
 import MatchScreen from "./MatchScreen";
@@ -81,6 +83,20 @@ export default function RoomView({ roomId, userId }: { roomId: string; userId: s
     }
   }, [room, questions, rounds, userId, info]);
 
+  // أجواء الموسيقى حسب الشاشة، وصوت خفيف عند انتقال الدور إليك
+  useEffect(() => {
+    if (!room) { audio.setMood("menu"); return; }
+    const lr = rounds.find((r) => r.round_no === room.current_round);
+    const iWon = room.status === "round_end" ? lr?.winner === userId : room.status === "finished" ? room.winner === userId : false;
+    audio.setMood(room.status === "playing" ? "match" : iWon ? "win" : room.status === "round_end" || room.status === "finished" ? "match" : "menu");
+  }, [room, rounds, userId]);
+  const prevTurn = useRef<string | null>(null);
+  useEffect(() => {
+    if (!room || room.status !== "playing") { prevTurn.current = null; return; }
+    if (prevTurn.current && prevTurn.current !== room.turn_uid && room.turn_uid === userId) sfx.turn();
+    prevTurn.current = room.turn_uid;
+  }, [room, userId]);
+
   if (st.loading) return <Spinner label="جارٍ دخول الغرفة..." />;
   if (st.gone || !st.room) {
     return (
@@ -108,8 +124,17 @@ export default function RoomView({ roomId, userId }: { roomId: string; userId: s
   const canClaim = oppGone && ["picking", "playing", "round_end"].includes(st.room.status);
   const oppOnlineNow = isOnline(st.opp);
 
+  // الخلفية المصوّرة حسب الشاشة: الفوز بالجولة/المباراة تأخذ خلفية الاحتفال، وغير ذلك خلفية المباراة
+  const status = st.room.status;
+  const lastRound = st.rounds.find((r) => r.round_no === st.room!.current_round);
+  const iWon = status === "round_end" ? lastRound?.winner === userId : status === "finished" ? st.room.winner === userId : false;
+  const bg = status === "playing" ? { src: ASSETS.matchBg, dim: 0.5 }
+    : status === "round_end" || status === "finished" ? (iWon ? { src: ASSETS.victoryBg, dim: 0.38 } : { src: ASSETS.matchBg, dim: 0.58 })
+    : { src: ASSETS.homeBg, dim: 0.5 };
+
   return (
     <div className="mx-auto max-w-5xl px-3 pb-10 pt-3">
+      <Backdrop src={bg.src} dim={bg.dim} />
       <div className="mb-3 flex items-center justify-between gap-2">
         <Logo small />
         <div className="flex items-center gap-2">

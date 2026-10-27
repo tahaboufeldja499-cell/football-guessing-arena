@@ -10,7 +10,8 @@ import { ensureUser, isConfigured, supabase } from "@/lib/supabase";
 interface Peek { exists: boolean; is_member?: boolean; players?: number; status?: string; host_nickname?: string; room_id?: string | null }
 
 function RoomInner() {
-  const raw = useSearchParams().get("code");
+  const sp = useSearchParams();
+  const raw = sp ? sp.get("code") : null;
   const code = String(raw ?? "").trim().toUpperCase();
   const router = useRouter();
   const [uid, setUid] = useState<string | null>(null);

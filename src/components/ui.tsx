@@ -1,17 +1,25 @@
 "use client";
 import { useMemo } from "react";
 import { cx } from "@/lib/utils";
+import { ASSETS } from "@/lib/assets";
 
 export function Logo({ small = false }: { small?: boolean }) {
   return (
     <div className="flex items-center gap-3 select-none">
-      <div className={cx("grid place-items-center rounded-full border-2 border-neon bg-black/40 shadow-[0_0_22px_rgba(45,255,122,.45)]", small ? "h-9 w-9 text-lg" : "h-14 w-14 text-3xl")}>⚽</div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={ASSETS.emblem} alt="" width={64} height={64} className={cx("object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,.6)]", small ? "h-11 w-11" : "h-[72px] w-[72px]")} />
       <div className="leading-tight">
-        <div className={cx("font-black tracking-wider text-white", small ? "text-sm" : "text-lg")} dir="ltr">FOOTBALL <span className="text-neon">GUESSING</span> ARENA</div>
-        <div className={cx("font-bold text-gold", small ? "text-[11px]" : "text-sm")}>ساحة تخمين النجوم</div>
+        <div className={cx("font-display font-bold uppercase tracking-[.14em] text-silver", small ? "text-sm" : "text-lg")} dir="ltr">Football <span className="text-gold">Guessing</span> Arena</div>
+        <div className={cx("font-bold text-neon", small ? "text-[11px]" : "text-sm")}>ساحة تخمين النجوم</div>
       </div>
     </div>
   );
+}
+
+/** الصورة الافتراضية لحساب اللاعب (لا توجد صور حسابات بعد). */
+export function PlayerAvatar({ size = 56, className }: { size?: number; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={ASSETS.avatar} alt="" width={size} height={size} className={cx("object-contain", className)} style={{ width: size, height: size }} />;
 }
 
 export function Spinner({ label = "جارٍ التحميل..." }: { label?: string }) {
@@ -35,14 +43,14 @@ export function ConnBanner({ conn }: { conn: "connected" | "reconnecting" }) {
 
 export function Toast({ text, kind }: { text: string; kind: "ok" | "err" }) {
   return (
-    <div role="status" className={cx("fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-xl border px-4 py-3 text-center text-sm font-bold shadow-2xl animate-rise",
+    <div role="status" className={cx("fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-[60] mx-auto max-w-md rounded-xl border px-4 py-3 text-center text-sm font-bold shadow-2xl animate-rise",
       kind === "err" ? "border-red-400/50 bg-red-950/90 text-red-100" : "border-neon/40 bg-ink/95 text-neon")}>{text}</div>
   );
 }
 
 export function Confetti() {
   const pieces = useMemo(() => Array.from({ length: 28 }, (_, i) => ({
-    left: (i * 37) % 100, delay: (i % 9) * 0.18, color: ["#2dff7a", "#f5c451", "#ffffff", "#5aa0ff"][i % 4], size: 6 + (i % 4) * 2,
+    left: (i * 37) % 100, delay: (i % 9) * 0.18, color: ["#3fdc86", "#f5c451", "#ffffff", "#5aa0ff"][i % 4], size: 6 + (i % 4) * 2,
   })), []);
   return (
     <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden" aria-hidden>
@@ -55,5 +63,5 @@ export function Confetti() {
 }
 
 export function StatusDot({ online }: { online: boolean }) {
-  return <span className={cx("inline-block h-2.5 w-2.5 rounded-full", online ? "bg-neon shadow-[0_0_8px_#2dff7a]" : "bg-red-400")} />;
+  return <span className={cx("inline-block h-2.5 w-2.5 rounded-full", online ? "bg-neon shadow-[0_0_8px_#3fdc86]" : "bg-red-400")} />;
 }

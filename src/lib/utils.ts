@@ -9,5 +9,14 @@ export function initials(name: string): string {
   if (!w.length) return "?";
   return w.length === 1 ? Array.from(w[0])[0] : Array.from(w[0])[0] + Array.from(w[w.length - 1])[0];
 }
-export const roomLink = (code: string) =>
-  typeof window === "undefined" ? `/room/${code}` : `${window.location.origin}/room/${code}`;
+/** رابط الدعوة. في التطبيق origin يكون localhost، فنستعمل NEXT_PUBLIC_SITE_URL (رابط موقعك المنشور) إن وُجد. */
+export const roomLink = (code: string) => {
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || (typeof window === "undefined" ? "" : window.location.origin)).replace(/\/$/, "");
+  return `${site}/room/?code=${code}`;
+};
+/** يستخرج رمز الغرفة من رمز مكتوب أو رابط دعوة ملصوق. */
+export const extractRoomCode = (input: string) => {
+  const t = input.trim();
+  const m = t.match(/[?&]code=([A-Za-z0-9]+)/);
+  return (m ? m[1] : t.split(/[\s/]+/).filter(Boolean).pop() ?? "").toUpperCase();
+};
