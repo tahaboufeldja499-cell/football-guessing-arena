@@ -1,6 +1,8 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { RoomCtx } from "@/lib/ctx";
+import { sfx } from "@/lib/sounds";
 import { isOnline } from "@/lib/useRoom";
 import { roomLink } from "@/lib/utils";
 import { PlayerAvatar, StatusDot } from "./ui";
@@ -28,8 +30,18 @@ export default function Lobby({ ctx }: { ctx: RoomCtx }) {
   const router = useRouter();
   const link = roomLink(room.code);
 
+  // أصوات اللاعب الآخر فقط: انضمامه واستعداده (لا صوت عند فتح الصفحة وهو موجود أصلًا)
+  const prevOpp = useRef<string | null>(opp ? opp.user_id : null);
+  const prevReady = useRef<boolean>(opp ? opp.ready : false);
+  useEffect(() => {
+    const id = opp ? opp.user_id : null;
+    if (id && id !== prevOpp.current) sfx.joined();
+    else if (id && opp && opp.ready && !prevReady.current) sfx.ready();
+    prevOpp.current = id; prevReady.current = opp ? opp.ready : false;
+  }, [opp]);
+
   async function copy(text: string, msg: string) {
-    try { await navigator.clipboard.writeText(text); info(msg); } catch { info("تعذّر النسخ تلقائيًا، انسخه يدويًا.", "err"); }
+    try { await navigator.clipboard.writeText(text); sfx.copied(); info(msg); } catch { info("تعذّر النسخ تلقائيًا، انسخه يدويًا.", "err"); }
   }
   async function share() {
     if (navigator.share) { try { await navigator.share({ title: "ساحة تخمين النجوم", text: "تعال نلعب تحدي تخمين اللاعبين!", url: link }); return; } catch { /* ألغى */ } }

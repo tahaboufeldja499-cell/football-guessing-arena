@@ -75,9 +75,13 @@ export default function RoomView({ roomId, userId }: { roomId: string; userId: s
     if (prevStatus.current !== room.status) {
       if (room.status === "round_end") {
         const r = rounds.find((x) => x.round_no === room.current_round);
-        (r?.winner === userId ? sfx.win : sfx.lose)();
-      } else if (room.status === "finished" && room.end_reason !== "draw") {
-        (room.winner === userId ? sfx.win : sfx.lose)();
+        if (r && r.winner == null) sfx.draw();
+        else if (r?.winner === userId) sfx.later("win", 0.9);    // بعد «تخمين صحيح» لا فوقه
+        else sfx.lose();
+      } else if (room.status === "finished") {
+        if (room.end_reason === "draw") sfx.draw();
+        else if (room.winner === userId) { sfx.champion(0.9); sfx.trophy(2.7); }   // ضربة الفوز ثم ظهور الكأس
+        else sfx.lose();
       }
       prevStatus.current = room.status;
     }
@@ -90,6 +94,19 @@ export default function RoomView({ roomId, userId }: { roomId: string; userId: s
     const iWon = room.status === "round_end" ? lr?.winner === userId : room.status === "finished" ? room.winner === userId : false;
     audio.setMood(room.status === "playing" ? "match" : iWon ? "win" : room.status === "round_end" || room.status === "finished" ? "match" : "menu");
   }, [room, rounds, userId]);
+  // انقطاع/عودة الاتصال: لا صوت للانقطاعات العابرة (أقل من 3 ثوانٍ)، ولا صوت عودة إلا بعد صوت انقطاع فعلي
+  const connLostPlayed = useRef(false);
+  const everConnected = useRef(false);
+  useEffect(() => {
+    if (st.conn === "connected") {
+      if (connLostPlayed.current) { connLostPlayed.current = false; sfx.restored(); }
+      everConnected.current = true;
+      return;
+    }
+    if (!everConnected.current) return;
+    const t = window.setTimeout(() => { connLostPlayed.current = true; sfx.lost(); }, 3000);
+    return () => window.clearTimeout(t);
+  }, [st.conn]);
   const prevTurn = useRef<string | null>(null);
   useEffect(() => {
     if (!room || room.status !== "playing") { prevTurn.current = null; return; }

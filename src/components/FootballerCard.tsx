@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { ASSETS } from "@/lib/assets";
 import { countryCode, flagCode } from "@/lib/countries";
 import type { Footballer } from "@/lib/types";
+import { sfx } from "@/lib/sounds";
 import { cx } from "@/lib/utils";
+import { useWikiPhoto } from "@/lib/wikiPhoto";
 
 export const POS_AR: Record<Footballer["position"], string> = { GK: "حارس", DF: "مدافع", MF: "وسط", FW: "مهاجم" };
 /** المراكز التفصيلية (أسلوب eFootball). */
@@ -24,9 +26,13 @@ interface CardProps {
 
 /** البطاقة: big = كاملة بنصوص على اللوحات، وإلا «بلاطة» للشبكات (الاسم تحتها كنص واضح). */
 export function FootballerCard({ f, selected, excluded, disabled, mark, onClick, big, reveal }: CardProps) {
-  const [bad, setBad] = useState(false);
+  const [badSrc, setBadSrc] = useState<string | null>(null);
   const legend = !!f.is_legend;
-  const hasPhoto = !!f.photo_url && !bad;
+  // الأولوية: صورة محلية/من قاعدة البيانات، وإن لم توجد أو فشلت فصورة ويكيبيديا (مصدر مفتوح).
+  const ownOk = !!f.photo_url && f.photo_url !== badSrc;
+  const wiki = useWikiPhoto(f.name_en, ownOk);
+  const src = ownOk ? f.photo_url : wiki && wiki !== badSrc ? wiki : null;
+  const hasPhoto = !!src;
 
   const card = (
     <div className={cx("fcard-wrap", selected && "sel", excluded && "ex", reveal && "reveal")}>
@@ -35,8 +41,8 @@ export function FootballerCard({ f, selected, excluded, disabled, mark, onClick,
         <div className="back" aria-hidden />
         <div className="win">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={cx("photo", !hasPhoto && "fallback")} src={hasPhoto ? f.photo_url! : ASSETS.avatar} alt={hasPhoto ? f.name_ar : ""}
-            loading="lazy" decoding="async" onError={() => setBad(true)} />
+          <img className={cx("photo", !hasPhoto && "fallback")} src={src ?? ASSETS.avatar} alt={hasPhoto ? f.name_ar : ""}
+            loading="lazy" decoding="async" onError={() => src && setBadSrc(src)} />
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="frame" src={legend ? ASSETS.legendFrame : ASSETS.frame} alt="" aria-hidden decoding="async" />
@@ -64,7 +70,7 @@ export function FootballerCard({ f, selected, excluded, disabled, mark, onClick,
   );
   if (!onClick) return <div>{card}{label}</div>;
   return (
-    <button type="button" className="fcard-btn" onClick={onClick} disabled={disabled} aria-pressed={selected}
+    <button type="button" className="fcard-btn" data-nosound onClick={onClick} disabled={disabled} aria-pressed={selected}
       aria-label={`${f.name_ar}${excluded ? " (مستبعد)" : ""}`}>
       {card}{label}
     </button>
@@ -77,6 +83,12 @@ interface GridProps {
 }
 export function PlayersGrid({ footballers, selectedId, excluded, disabledIds, onSelect }: GridProps) {
   const [q, setQ] = useState("");
+  /** صوت البطاقة يُحدَّد هنا: لوحة الاستبعاد (استبعاد/إرجاع فعليان) أو لوحة الاختيار (اختيار بطاقة جديدة). */
+  const pick = (id: number) => {
+    if (excluded) (excluded.has(id) ? sfx.restore : sfx.eliminate)();
+    else if (id !== selectedId) sfx.select();
+    onSelect(id);
+  };
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return footballers;
@@ -91,7 +103,7 @@ export function PlayersGrid({ footballers, selectedId, excluded, disabledIds, on
         <div className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {list.map((f) => (
             <FootballerCard key={f.id} f={f} selected={selectedId === f.id} excluded={excluded?.has(f.id)}
-              disabled={disabledIds?.has(f.id)} mark={disabledIds?.has(f.id) ? "x" : undefined} onClick={() => onSelect(f.id)} />
+              disabled={disabledIds?.has(f.id)} mark={disabledIds?.has(f.id) ? "x" : undefined} onClick={() => pick(f.id)} />
           ))}
         </div>
       )}

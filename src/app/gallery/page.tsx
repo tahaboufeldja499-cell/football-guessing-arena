@@ -7,7 +7,7 @@ import Icon from "@/components/Icon";
 import { Logo } from "@/components/ui";
 import { ASSETS } from "@/lib/assets";
 import { inPacks, PACKS, packsOf, type Pack } from "@/lib/packs";
-import { audio, sfx } from "@/lib/sounds";
+import { audio } from "@/lib/sounds";
 import { useFootballers } from "@/lib/useFootballers";
 import { cx } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export default function Gallery() {
             className={cx("rounded-full border px-4 py-1.5 text-sm font-bold transition", sel.includes(p.id) ? "border-neon bg-neon/15 text-neon" : "border-white/15 bg-white/5 text-white/70")}>{p.title}</button>
         ))}
       </div>
-      <PlayersGrid footballers={list} onSelect={(id) => { sfx.select(); setOpen(id); }} />
+      <PlayersGrid footballers={list} onSelect={(id) => setOpen(id)} />
 
       {f && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label={f.name_ar} onClick={() => setOpen(null)}>

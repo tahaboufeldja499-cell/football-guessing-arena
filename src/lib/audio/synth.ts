@@ -1,6 +1,7 @@
 /** تركيب الصوت بالكود (WebAudio): دوال نقية تأخذ سياق صوت ووجهة، فيمكن اختبارها بـ OfflineAudioContext. */
 export type Mood = "menu" | "match" | "win";
-export type SfxName = "tap" | "select" | "ask" | "incoming" | "yes" | "no" | "unsure" | "answered" | "wrong" | "reveal" | "turn" | "round" | "win" | "lose" | "cover";
+export type SfxName = "tap" | "select" | "ask" | "incoming" | "yes" | "no" | "unsure" | "answered" | "wrong" | "reveal" | "turn" | "round" | "win" | "lose" | "cover"
+  | "eliminate" | "restore" | "correct" | "champion" | "trophy" | "joined" | "ready" | "lost" | "restored" | "copied" | "draw";
 type Ctx = BaseAudioContext;
 const hz = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -136,5 +137,40 @@ export function playSfx(ctx: Ctx, d: AudioNode, name: SfxName, t: number): numbe
       return 2.6;
     case "lose": [392, 330, 262].forEach((f, i) => tone(ctx, d, { t: t + i * 0.2, f, dur: 0.25, gain: 0.18, r: 0.5 })); return 1.2;
     case "cover": burst(ctx, d, { t, dur: 0.25, gain: 0.4, f: 1500, f2: 500, q: 1, a: 0.05 }); return 0.3;
+    // استبعاد لاعب من اللوحة: انزلاق رقمي هابط + نقرة مكتومة
+    case "eliminate":
+      tone(ctx, d, { t, f: 540, f2: 190, dur: 0.15, type: "triangle", gain: 0.13, a: 0.005, r: 0.05, lp: 2000 });
+      burst(ctx, d, { t, dur: 0.045, gain: 0.1, type: "lowpass", f: 900 });
+      return 0.3;
+    // إرجاع لاعب مستبعد: عكس الانزلاق، أخفّ
+    case "restore": tone(ctx, d, { t, f: 360, f2: 620, dur: 0.1, type: "triangle", gain: 0.1, a: 0.005, r: 0.08 }); return 0.25;
+    // تخمين صحيح: ضربة + ثلاث نغمات صاعدة + لمعة معدنية (أقصر وأخف من فوز البطولة)
+    case "correct":
+      kick(ctx, d, t, 0.22, 0.25);
+      [659, 880, 1319].forEach((f, i) => tone(ctx, d, { t: t + 0.04 + i * 0.09, f, dur: i === 2 ? 0.35 : 0.1, type: "sawtooth", gain: 0.075, lp: 2600, a: 0.01, r: i === 2 ? 0.5 : 0.12 }));
+      [2637, 3136].forEach((f, i) => tone(ctx, d, { t: t + 0.3 + i * 0.07, f, dur: 0.12, gain: 0.05, r: 0.6 }));
+      return 1.2;
+    // فوز بالبطولة: ضربة سينمائية + نحاسيات + لمعة + جمهور
+    case "champion":
+      kick(ctx, d, t, 0.5, 0.6);
+      burst(ctx, d, { t, dur: 0.5, gain: 0.2, type: "lowpass", f: 380 });
+      [[587, 740, 880], [587, 740, 880, 1175]].forEach((ch, k) => ch.forEach((f) =>
+        tone(ctx, d, { t: t + 0.04 + k * 0.28, f, dur: k ? 1.3 : 0.24, type: "sawtooth", gain: 0.06, lp: 2200, a: 0.03, r: k ? 1.2 : 0.2 })));
+      [2349, 2794, 3136, 3951].forEach((f, i) => tone(ctx, d, { t: t + 0.55 + i * 0.09, f, dur: 0.18, gain: 0.05, r: 0.9 }));
+      burst(ctx, d, { t: t + 0.3, dur: 2.6, gain: 0.15, f: 1000, q: 0.4, a: 0.5 });
+      burst(ctx, d, { t: t + 0.6, dur: 1.6, gain: 0.06, type: "highpass", f: 6000, a: 0.02 });
+      return 3.4;
+    // ظهور الكأس: صعود ناعم + لمعة معدنية رقيقة (بدون ضربة ثقيلة كي لا تتراكم مع فوز البطولة)
+    case "trophy":
+      burst(ctx, d, { t, dur: 0.6, gain: 0.1, type: "highpass", f: 500, f2: 7000, a: 0.3 });
+      [1568, 2093, 2637, 3136].forEach((f, i) => tone(ctx, d, { t: t + 0.4 + i * 0.1, f, dur: 0.2, gain: 0.055, r: 0.9 }));
+      return 1.8;
+    case "joined": tone(ctx, d, { t, f: 659, dur: 0.09, type: "triangle", gain: 0.15, r: 0.2 }); tone(ctx, d, { t: t + 0.1, f: 988, dur: 0.14, type: "triangle", gain: 0.15, r: 0.4 }); return 0.7;
+    case "ready": tone(ctx, d, { t, f: 1047, dur: 0.06, gain: 0.12, r: 0.1 }); tone(ctx, d, { t: t + 0.07, f: 1568, dur: 0.1, gain: 0.12, r: 0.35 }); return 0.6;
+    case "lost": tone(ctx, d, { t, f: 494, dur: 0.12, gain: 0.13, r: 0.3 }); tone(ctx, d, { t: t + 0.18, f: 370, dur: 0.2, gain: 0.13, r: 0.5 }); return 0.9;
+    case "restored": [440, 554, 659].forEach((f, i) => tone(ctx, d, { t: t + i * 0.09, f, dur: 0.1, type: "triangle", gain: 0.13, r: i === 2 ? 0.4 : 0.15 })); return 0.7;
+    case "copied": tone(ctx, d, { t, f: 1319, dur: 0.04, type: "triangle", gain: 0.13, r: 0.06 }); tone(ctx, d, { t: t + 0.05, f: 1760, dur: 0.08, gain: 0.1, r: 0.3 }); return 0.5;
+    // تعادل: وتران متوازنان محايدان
+    case "draw": [523, 392].forEach((f) => tone(ctx, d, { t, f, dur: 0.35, type: "triangle", gain: 0.12, a: 0.02, r: 0.6 })); return 1.0;
   }
 }

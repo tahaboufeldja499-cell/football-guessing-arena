@@ -12,8 +12,9 @@ const MOTES = Array.from({ length: 16 }, (_, i) => ({
 
 export default function Stadium() {
   useEffect(() => {
-    // أجهزة محدودة الأداء → نسخة أخف (بلا جزيئات ولا ضباب)
-    const weak = (navigator.hardwareConcurrency ?? 8) <= 4;
+    // النسخة الخفيفة (بلا جزيئات ولا ضباب) معطّلة: المؤثرات الكاملة تعمل على كل الأجهزة.
+    // لإعادتها للأجهزة الضعيفة: غيّر false إلى (navigator.hardwareConcurrency ?? 8) <= 4
+    const weak = false;
     document.documentElement.classList.toggle("lite", weak);
   }, []);
   return (

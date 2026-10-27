@@ -18,7 +18,15 @@ let unlocked = false, wantMood: Mood | null = null, introUntil = 0, token = 0;
 let synth: { bus: GainNode; mood: Mood; bar: number; next: number; timer: number } | null = null;
 let introBus: GainNode | null = null;
 let fileEl: HTMLAudioElement | null = null;
-const fileOk = new Map<Mood, boolean>();
+let fileMood: Mood | null = null;
+/** ملفات الموسيقى المرفقة في public/audio. أكثر من ملف للحالة الواحدة = تتناوب بالتسلسل. */
+const MUSIC: Record<Mood, string[]> = {
+  menu: ["music-menu.mp3", "music-menu-2.mp3"],
+  match: ["music-match.mp3", "music-match-2.mp3"],
+  win: ["music-win.mp3"],
+};
+const nextIdx: Record<Mood, number> = { menu: 0, match: 0, win: 0 };
+const MUSIC_GAIN = 0.7;   // الملفات أعلى من المولَّد: نخفضها قليلًا لتبقى المؤثرات واضحة
 
 function ensure(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -39,16 +47,7 @@ function applyVol() {
   if (!ctx) return;
   musicOut.gain.value = isMusicOn() ? getMusicVol() * 0.45 : 0;   // الموسيقى أخفض من المؤثرات لتبقى المؤثرات واضحة
   sfxOut.gain.value = isSfxOn() ? getSfxVol() : 0;
-  if (fileEl) fileEl.volume = isMusicOn() ? getMusicVol() : 0;
-}
-
-async function hasFile(m: Mood) {
-  if (fileOk.has(m)) return fileOk.get(m)!;
-  try {
-    const r = await fetch(`/audio/music-${m}.mp3`, { method: "HEAD" });
-    const ok = r.ok && (r.headers.get("content-type") || "").includes("audio");
-    fileOk.set(m, ok); return ok;
-  } catch { fileOk.set(m, false); return false; }
+  if (fileEl) fileEl.volume = isMusicOn() ? getMusicVol() * MUSIC_GAIN : 0;
 }
 
 function startSynth(m: Mood) {
@@ -66,28 +65,58 @@ function stopSynth() {
   const t = ctx.currentTime; s.bus.gain.cancelScheduledValues(t); s.bus.gain.setValueAtTime(Math.max(0.0001, s.bus.gain.value), t); s.bus.gain.linearRampToValueAtTime(0.0001, t + 0.5);
   window.setTimeout(() => s.bus.disconnect(), 900);
 }
-function stopFile() { if (fileEl) { fileEl.pause(); fileEl = null; } }
+function stopFile() {
+  if (!fileEl) return;
+  const el = fileEl; fileEl = null; fileMood = null;
+  el.onended = null; el.onerror = null;
+  // تلاشٍ سريع بدل القطع المفاجئ
+  const iv = window.setInterval(() => {
+    el.volume = Math.max(0, el.volume - 0.1);
+    if (el.volume <= 0.001) { window.clearInterval(iv); el.pause(); }
+  }, 40);
+  window.setTimeout(() => { window.clearInterval(iv); el.pause(); }, 700);
+}
 
-async function syncMusic() {
+/** يبدأ المقطع التالي من قائمة الحالة. إن فشل التحميل أو التشغيل نرجع للموسيقى المولَّدة. */
+function startTrack(m: Mood) {
+  const list = MUSIC[m];
+  const file = list[nextIdx[m] % list.length]; nextIdx[m]++;
+  const el = new Audio(`/audio/${file}`);
+  el.loop = list.length === 1;
+  el.preload = "auto";
+  el.onended = () => { if (fileEl === el && wantMood === m && isMusicOn()) { fileEl = null; startTrack(m); } };
+  el.onerror = () => { if (fileEl === el) { fileEl = null; fileMood = null; if (wantMood === m && isMusicOn()) startSynth(m); } };
+  fileEl = el; fileMood = m;
+  applyVol();
+  el.play().catch((e: unknown) => {
+    // يحتاج تفاعلًا من المستخدم: نُبقي العنصر وسنعيد المحاولة عند أول لمسة. أي خطأ آخر → الموسيقى المولَّدة.
+    if ((e as { name?: string })?.name !== "NotAllowedError" && fileEl === el) { fileEl = null; fileMood = null; startSynth(m); }
+  });
+}
+
+function syncMusic() {
   if (!unlocked || !ctx) return;
   const my = ++token;
   if (performance.now() < introUntil) { window.setTimeout(syncMusic, introUntil - performance.now() + 50); return; }
   if (!isMusicOn() || !wantMood) { stopSynth(); stopFile(); return; }
   const m = wantMood;
-  const file = await hasFile(m);
   if (my !== token) return;
-  if (file) {            // ملف موسيقى حقيقي موضوع في public/audio يغلب الموسيقى المولَّدة
-    stopSynth();
-    if (!fileEl || !fileEl.src.endsWith(`music-${m}.mp3`)) { stopFile(); fileEl = new Audio(`/audio/music-${m}.mp3`); fileEl.loop = true; }
-    applyVol(); fileEl.play().catch(() => { /* يحتاج تفاعلًا */ });
-  } else { stopFile(); startSynth(m); }
+  stopSynth();
+  if (fileEl && fileMood === m) {            // نفس الحالة: لا نعيد المقطع من أوله
+    applyVol();
+    if (fileEl.paused) fileEl.play().catch(() => { /* ينتظر لمسة */ });
+    return;
+  }
+  stopFile();
+  startTrack(m);
 }
 
-const play = (name: SfxName) => {
+/** delay بالثواني: لتتابع المؤثرات (مثل تخمين صحيح ثم فوز) دون أن تتراكم فوق بعضها. */
+const play = (name: SfxName, delay = 0) => {
   const c = ensure();
   if (!c || !unlocked || !isSfxOn()) return;
   if (c.state === "suspended") c.resume();
-  playSfx(c, sfxOut, name, c.currentTime + 0.01);
+  playSfx(c, sfxOut, name, c.currentTime + 0.01 + delay);
 };
 
 export const audio = {
@@ -130,5 +159,11 @@ export const sfx = {
   yes: () => play("yes"), no: () => play("no"), unsure: () => play("unsure"), answered: () => play("answered"),
   wrong: () => play("wrong"), reveal: () => play("reveal"), turn: () => play("turn"), round: () => play("round"),
   win: () => play("win"), lose: () => play("lose"), cover: () => play("cover"),
+  eliminate: () => play("eliminate"), restore: () => play("restore"), correct: () => play("correct"),
+  champion: (delay = 0) => play("champion", delay), trophy: (delay = 0) => play("trophy", delay),
+  joined: () => play("joined"), ready: () => play("ready"), lost: () => play("lost"), restored: () => play("restored"),
+  copied: () => play("copied"), draw: (delay = 0) => play("draw", delay),
+  /** يؤخّر مؤثرًا موجودًا (بالثواني) ليأتي بعد مؤثر سابق. */
+  later: (name: SfxName, delay: number) => play(name, delay),
 };
 export type { Mood };

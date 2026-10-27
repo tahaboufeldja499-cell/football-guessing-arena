@@ -54,7 +54,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         <Block title="عرض المقدمة" hint="المقدمة السينمائية عند فتح اللعبة">
           <Toggle on={intro} label="عرض المقدمة" onChange={(v) => { setIntro(v); try { localStorage.setItem("fga-intro-off", v ? "0" : "1"); } catch { /* ignore */ } }} />
         </Block>
-        <p className="text-xs text-white/45">الموسيقى والمؤثرات مولَّدة بالكود. لاستعمال موسيقى حقيقية مرخّصة ضع ملفات mp3 في public/audio (التفاصيل في README).</p>
+        <p className="text-xs text-white/45">الموسيقى من ملفات اللعبة، والمؤثرات مولَّدة بالكود فتعمل بدون إنترنت. التفاصيل في public/audio/README.md.</p>
       </div>
     </div>
   );

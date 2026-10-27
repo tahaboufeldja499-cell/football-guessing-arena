@@ -156,7 +156,7 @@ export function TurnView({ s, d, pool, byId }: { s: LocalState; d: D; pool: Foot
 
   const ask = (b: string) => { const t = b.trim(); if (!t) return; sfx.ask(); d({ t: "ASK", text: t }); };
   const answer = () => { if (!choice) return; (choice === "yes" ? sfx.yes : choice === "no" ? sfx.no : sfx.unsure)(); d({ t: "ANSWER", a: choice }); };
-  const guess = (id: number) => { if (id !== s.secrets[opp]) sfx.wrong(); setGuessOpen(false); d({ t: "GUESS", id }); };
+  const guess = (id: number) => { if (id !== s.secrets[opp]) sfx.wrong(); else sfx.correct(); setGuessOpen(false); d({ t: "GUESS", id }); };
   const nameOfFb = (id?: number) => (id ? byId.get(id)?.name_ar : "") ?? "";
 
   return (
@@ -301,8 +301,11 @@ export default function LocalGame() {
   useEffect(() => { audio.setMood(s.phase === "turn" ? "match" : s.phase === "roundEnd" || s.phase === "final" ? "win" : "menu"); }, [s.phase]);
   useEffect(() => {
     if (s.phase === "cover") sfx.cover();
-    else if (s.phase === "roundEnd") sfx.round();
-    else if (s.phase === "final" && matchWinner(s) !== null) sfx.win();
+    else if (s.phase === "roundEnd") sfx.later("round", 0.9);   // بعد مؤثر «تخمين صحيح» لا فوقه
+    else if (s.phase === "final") {
+      if (matchWinner(s) !== null) { sfx.champion(0.3); sfx.trophy(2.1); }   // ثم ظهور الكأس بعد ضربة الفوز
+      else sfx.draw();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.phase]);
 
