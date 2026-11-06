@@ -1,0 +1,95 @@
+/* ===== بطاقات اللاعبين: الصورة خلف الإطار، والنصوص عناصر HTML فوق اللوحات ===== */
+.fcard-wrap { position: relative; width: 100%; isolation: isolate; perspective: 700px; }
+.fcard { position: relative; width: 100%; aspect-ratio: 640 / 913; container-type: inline-size;
+  transition: transform .18s ease, filter .18s ease; }
+.fcard.legend { aspect-ratio: 640 / 901; }
+.fcard .win { position: absolute; overflow: hidden; background: linear-gradient(180deg, #11523c, #06140f);
+  left: 15.5%; top: 11.4%; width: 69.3%; height: 67.7%; }
+.fcard.legend .win { left: 23.4%; top: 23.4%; width: 53.5%; height: 51.2%; }
+.fcard .back { display: none; position: absolute; background: #07281d; }
+.fcard.legend .back { display: block; left: 17%; top: 17%; width: 66%; height: 64%; }
+.fcard .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+.fcard .photo.fallback { object-fit: contain; padding: 9%; }
+.fcard .frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+
+.fcard .t { position: absolute; display: grid; place-items: center; text-align: center; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; line-height: 1; font-weight: 900; padding: 0 1.5%; }
+.fcard .t.n { left: 35.3%; width: 49.2%; top: 81.2%; height: 6.9%; font-size: 6.3cqw; color: #1b1304; text-shadow: 0 1px 0 rgba(255,240,190,.55); }
+.fcard.legend .t.n { top: 82.2%; height: 7%; }
+.fcard .t.p { left: 17.1%; width: 13.5%; top: 70.5%; height: 6.7%; font-size: 4.6cqw; color: #1b1304; text-shadow: 0 1px 0 rgba(255,240,190,.55); }
+.fcard.legend .t.p { top: 71.1%; height: 6.6%; }
+.fcard .t.f { left: 15.6%; width: 14.5%; top: 81.2%; height: 6.9%; font-size: 5.2cqw; color: #e8efec; letter-spacing: .04em; }
+.fcard.legend .t.f { top: 82.2%; height: 7%; }
+.fcard .t.f .fi { font-size: 5.6cqw; line-height: 1; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.fcard .t.b { left: 34%; width: 32%; top: 17.1%; height: 5.2%; font-size: 3.4cqw; color: #1b1304; text-shadow: 0 1px 0 rgba(255,240,190,.55); }
+.fcard.tile .t { display: none; }
+
+.tile-name { margin-top: 5px; text-align: center; font-weight: 800; font-size: 13px; line-height: 1.15; color: #e8efec;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-sub { text-align: center; font-size: 11px; color: rgba(232,239,236,.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.fcard-btn { display: block; width: 100%; text-align: center; background: none; border: 0; padding: 0; cursor: pointer; color: inherit; }
+.fcard-btn:disabled { cursor: not-allowed; }
+.fcard-btn:focus-visible { outline: 2px solid #3fdc86; outline-offset: 3px; border-radius: 10px; }
+@media (hover: hover) {
+  .fcard-btn:not(:disabled):hover .fcard { transform: translateY(-4px) rotateX(5deg) rotateY(-5deg); filter: brightness(1.1); }
+}
+.fcard-btn:not(:disabled):active .fcard { transform: scale(.97); }
+
+/* الاختيار: الهالة الزمردية خلف البطاقة المختارة فقط */
+.fcard-halo { position: absolute; left: 50%; top: 42%; width: 150%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  z-index: -1; pointer-events: none; opacity: .95; animation: haloPulse 2.2s ease-in-out infinite; }
+.fcard-wrap.sel .fcard { filter: drop-shadow(0 0 9px rgba(63,220,134,.6)); }
+@keyframes haloPulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: .85; } 50% { transform: translate(-50%,-50%) scale(1.05); opacity: 1; } }
+
+/* الاستبعاد: رمادي وإضاءة أقل مع علامة، والاسم يبقى مقروءًا */
+.fcard-wrap.ex .fcard .win, .fcard-wrap.ex .fcard .frame { filter: grayscale(1) brightness(.5); }
+.fcard-wrap.ex ~ .tile-name { color: rgba(232,239,236,.72); text-decoration: line-through; text-decoration-color: rgba(239,68,68,.8); }
+.xmark { position: absolute; left: 15%; top: 11%; width: 70%; height: 68%; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+
+/* الكشف: إضاءة ذهبية ولمعان متحرك */
+.fcard-wrap.reveal { filter: drop-shadow(0 0 16px rgba(212,175,55,.8)); animation: revealGlow 1.8s ease-in-out infinite alternate; }
+.fcard-wrap.reveal .fcard { overflow: hidden; }
+.fcard-wrap.reveal .fcard::after { content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,244,200,.5) 50%, transparent 62%);
+  transform: translateX(-130%); animation: shine 2.8s ease-in-out infinite; }
+@keyframes revealGlow { from { filter: drop-shadow(0 0 10px rgba(212,175,55,.5)); } to { filter: drop-shadow(0 0 24px rgba(240,200,80,.95)); } }
+@keyframes shine { 0%, 35% { transform: translateX(-130%); } 75%, 100% { transform: translateX(130%); } }
+
+/* قلب البطاقة: من الغموض إلى اللاعب الحقيقي */
+.flip { perspective: 900px; }
+.flip-inner { position: relative; transform-style: preserve-3d; transition: transform .9s cubic-bezier(.3,.7,.2,1); }
+.flip.on .flip-inner { transform: rotateY(180deg); }
+.flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+.mystery-img { display: block; width: 100%; aspect-ratio: 640 / 913; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
+
+/* ===== الخلفيات المصوّرة ===== */
+.backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: #050908; overflow: hidden; }
+.backdrop img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; animation: kenburns 40s ease-in-out infinite alternate; }
+.backdrop::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(5,9,8,calc(var(--dim) + .18)) 0%, rgba(5,9,8,var(--dim)) 45%, rgba(5,9,8,calc(var(--dim) + .32)) 100%); }
+@keyframes kenburns { from { transform: scale(1.02); } to { transform: scale(1.07); } }
+html.lite .backdrop img { animation: none; }
+html.has-backdrop .stadium { display: none; }
+
+/* المقدمة: نفق الملعب */
+.intro { background: #000; }
+.intro-bg { position: absolute; inset: 0; transition: transform .7s ease-in; }
+.intro-bg img { width: 100%; height: 100%; object-fit: cover; }
+.intro.leaving .intro-bg { transform: scale(1.5); }
+.intro-shade { position: absolute; inset: 0; background: #000; opacity: 1; transition: opacity .3s; }
+.intro.go .intro-shade { opacity: .45; animation: ignite 1.9s linear .25s both; }
+.intro-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,.2), rgba(0,0,0,.8)); }
+@keyframes ignite { 0% { opacity: 1; } 10% { opacity: .5; } 16% { opacity: .95; } 30% { opacity: .35; } 38% { opacity: .8; } 52% { opacity: .3; } 100% { opacity: .45; } }
+.intro .content { position: relative; z-index: 1; }
+
+/* الكأس */
+.trophy-img { display: block; margin: 0 auto; object-fit: contain; animation: trophyFloat 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 28px rgba(212,175,55,.55)) drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+@keyframes trophyFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop img, .fcard-halo, .trophy-img, .intro-shade, .fcard-wrap.reveal, .fcard-wrap.reveal .fcard::after { animation: none !important; }
+  .flip-inner, .intro-bg { transition: none !important; }
+}
